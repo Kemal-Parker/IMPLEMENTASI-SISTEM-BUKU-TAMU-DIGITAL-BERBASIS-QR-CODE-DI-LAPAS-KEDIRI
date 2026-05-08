@@ -99,6 +99,24 @@ async function startServer() {
     }
   });
 
+  // Delete guest record
+  app.delete('/api/guests/:id', (req, res) => {
+    try {
+      const id = req.params.id;
+      const stmt = db.prepare(`DELETE FROM guests WHERE id = ?`);
+      const result = stmt.run(id);
+      
+      if (result.changes > 0) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: 'Guest not found' });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to delete guest' });
+    }
+  });
+
   // Export CSV
   app.get('/api/export/csv', (req, res) => {
     try {

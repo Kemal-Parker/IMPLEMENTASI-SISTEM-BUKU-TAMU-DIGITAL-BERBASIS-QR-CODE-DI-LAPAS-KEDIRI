@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Search, FileText } from 'lucide-react';
+import { Download, Search, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -8,6 +8,7 @@ import { Guest } from '../db';
 export default function AdminHistory() {
   const [history, setHistory] = useState<Guest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [filter, setFilter] = useState('all'); // all, today, week, month
   const [search, setSearch] = useState('');
 
@@ -27,6 +28,30 @@ export default function AdminHistory() {
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus data riwayat ini secara permanen?")) {
+      return;
+    }
+    
+    setIsDeleting(id);
+    try {
+      const res = await fetch(`/api/guests/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        setHistory(prev => prev.filter(g => g.id !== id));
+      } else {
+        alert("Gagal menghapus data.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan.");
+    } finally {
+      setIsDeleting(null);
+    }
+  };
 
   const handleExportCSV = () => {
     window.location.href = '/api/export/csv';
@@ -151,16 +176,17 @@ export default function AdminHistory() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tujuan</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Masuk</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Keluar</th>
+                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">Memuat data...</td>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">Memuat data...</td>
                 </tr>
               ) : filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">
                     Tidak ada riwayat kunjungan yang sesuai dengan filter.
                   </td>
                 </tr>
@@ -185,6 +211,16 @@ export default function AdminHistory() {
                       {guest.check_out_time 
                         ? format(new Date(guest.check_out_time + 'Z'), 'HH:mm - dd MMM yyyy')
                         : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handleDelete(guest.id)}
+                        disabled={isDeleting === guest.id}
+                        className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50 transition-colors disabled:opacity-50"
+                        title="Hapus Kunjungan"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
                     </td>
                   </tr>
                 ))
