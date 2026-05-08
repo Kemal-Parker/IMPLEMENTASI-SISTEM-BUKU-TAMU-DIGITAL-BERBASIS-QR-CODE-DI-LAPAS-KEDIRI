@@ -1,0 +1,8 @@
+{
+  "name": "Buku Tamu Digital Lapas Kediri",
+  "description": "Sistem Buku Tamu Digital Berbasis QR Code untuk Lapas Kediri",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
