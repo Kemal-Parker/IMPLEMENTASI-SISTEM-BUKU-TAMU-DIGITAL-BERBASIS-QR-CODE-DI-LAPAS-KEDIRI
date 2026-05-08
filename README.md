@@ -1,36 +1,20 @@
-# SISTEM BUKU TAMU DIGITAL BERBASIS QR CODE (LAPAS KEDIRI)
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-Inovasi sistem administrasi kunjungan di **Lapas Kelas IIA Kediri** untuk mempercepat proses pendataan tamu, meningkatkan akurasi data, dan menyediakan pelaporan real-time yang efisien.
+# Run and deploy your AI Studio app
 
-## 🌟 Fitur Utama
+This contains everything you need to run your app locally.
 
-- **Self-Registration QR Code**: Pengunjung cukup memindai QR Code di area pendaftaran untuk mengisi formulir digital.
-- **Dashboard Real-time**: Monitor jumlah pengunjung aktif dan total kunjungan harian secara langsung.
-- **Manajemen Tamu Aktif**: Petugas dapat melakukan proses *check-out* pengunjung dengan satu klik.
-- **Riwayat & Laporan**: Filter data kunjungan berdasarkan rentang waktu (Hari/Minggu/Bulan/Tahun).
-- **Ekspor Data**: Mendukung ekspor laporan ke format **Excel (.xlsx)** dan **PDF**.
+View your app in AI Studio: https://ai.studio/apps/0841dd81-af87-4511-9f82-62db611e74fa
 
-## 🛠️ Stack Teknologi
+## Run Locally
 
-- **Backend**: Python (Flask / FastAPI)
-- **Database**: SQLite (Default) / PostgreSQL
-- **Frontend**: HTML5, CSS3, JavaScript (Bootstrap 5)
-- **Library Pendukung**: 
-    - `qrcode`: Untuk pembuatan QR Code.
-    - `pandas` & `openpyxl`: Untuk pengolahan data dan ekspor Excel.
-    - `WeasyPrint` / `ReportLab`: Untuk generate laporan PDF.
+**Prerequisites:**  Node.js
 
-## 📂 Struktur Proyek
 
-```text
-lapas-kediri-guestbook/
-├── app/
-│   ├── static/          # CSS, JS, Images
-│   ├── templates/       # HTML Files (index, dashboard, report)
-│   ├── models.py        # Database Schema
-│   ├── routes.py        # Logika API & Routing
-│   └── utils.py         # Fungsi Export & QR Generator
-├── exports/             # Folder hasil download Excel/PDF
-├── app.py               # Main Entry Point
-├── requirements.txt     # Daftar Library
-└── README.md
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
