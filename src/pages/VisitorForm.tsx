@@ -1,6 +1,8 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Camera, Upload, CheckCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export default function VisitorForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,33 +56,24 @@ export default function VisitorForm() {
     
     const formData = new FormData(e.currentTarget);
     const data = {
-      nik: formData.get('nik'),
-      name: formData.get('name'),
-      address: formData.get('address'),
-      phone: formData.get('phone'),
-      inmate_name: formData.get('inmate_name'),
-      relationship: formData.get('relationship'),
-      purpose: formData.get('purpose'),
-      photo_url: photoBase64
+      nik: formData.get('nik') as string,
+      name: formData.get('name') as string,
+      address: formData.get('address') as string,
+      phone: formData.get('phone') as string,
+      inmate_name: formData.get('inmate_name') as string,
+      relationship: formData.get('relationship') as string,
+      purpose: formData.get('purpose') as string,
+      photo_url: photoBase64,
+      status: 'Aktif',
+      check_in_time: new Date().toISOString()
     };
 
     try {
-      const response = await fetch('/api/guests/check-in', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (response.ok) {
-        setIsSuccess(true);
-      } else {
-        alert('Terjadi kesalahan saat menyimpan data kunjungan.');
-      }
+      await addDoc(collection(db, 'guests'), data);
+      setIsSuccess(true);
     } catch (error) {
       console.error(error);
-      alert('Gagal menghubungi server.');
+      alert('Gagal menyimpan ke database Firebase. Pastikan koneksi internet Anda lancar.');
     } finally {
       setIsSubmitting(false);
     }

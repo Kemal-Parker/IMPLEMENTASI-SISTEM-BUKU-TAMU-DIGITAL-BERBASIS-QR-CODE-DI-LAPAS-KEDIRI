@@ -1,44 +1,63 @@
 import { useState, useEffect } from 'react';
 import { Users, UserX, Clock, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
-import { Guest } from '../db'; // the types 
+import { db } from '../lib/firebase';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ activeGuests: 0, todayGuests: 0 });
-  const [activeGuests, setActiveGuests] = useState<Guest[]>([]);
+  const [activeGuests, setActiveGuests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchData = async () => {
-    try {
-      const [statsRes, guestsRes] = await Promise.all([
-        fetch('/api/stats'),
-        fetch('/api/guests/active')
-      ]);
-      const statsData = await statsRes.json();
-      const guestsData = await guestsRes.json();
-      
-      setStats(statsData);
-      setActiveGuests(guestsData);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    // Initial fetch
-    fetchData();
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+    // We can just listen to the whole collection for simplicity in this small app
+    // or specifically listen to today's guests and active guests
+    const q = query(
+      collection(db, 'guests'), 
+      orderBy('check_in_time', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let activeCount = 0;
+      let todayCount = 0;
+      const activeList: any[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const checkIn = new Date(data.check_in_time);
+        
+        if (checkIn >= today) {
+          todayCount++;
+        }
+
+        if (data.status === 'Aktif') {
+          activeCount++;
+          activeList.push({ id: doc.id, ...data });
+        }
+      });
+
+      setStats({ activeGuests: activeCount, todayGuests: todayCount });
+      setActiveGuests(activeList);
+      setIsLoading(false);
+    }, (error) => {
+      console.error(error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const handleCheckOut = async (id: number) => {
+  const handleCheckOut = async (id: string) => {
     try {
-      await fetch(`/api/guests/${id}/check-out`, { method: 'POST' });
-      fetchData(); // refresh data immediately
+      await updateDoc(doc(db, 'guests', id), {
+        status: 'Selesai',
+        check_out_time: new Date().toISOString()
+      });
     } catch (err) {
+      console.error(err);
       alert('Gagal check-out tamu');
     }
   };
@@ -139,7 +158,7 @@ export default function AdminDashboard() {
                       <div className="text-sm text-gray-900 line-clamp-2">{guest.purpose}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(guest.check_in_time + 'Z'), 'HH:mm - dd MMM yyyy')}
+                      {format(new Date(guest.check_in_time), 'HH:mm - dd MMM yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button

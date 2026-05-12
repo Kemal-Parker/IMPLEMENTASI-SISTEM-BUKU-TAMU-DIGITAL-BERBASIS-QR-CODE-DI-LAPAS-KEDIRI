@@ -1,0 +1,29 @@
+{
+  "entities": {
+    "Guest": {
+      "title": "Guest",
+      "description": "A guest visitor record for Lapas.",
+      "type": "object",
+      "properties": {
+        "nik": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "inmate_name": { "type": "string" },
+        "relationship": { "type": "string" },
+        "purpose": { "type": "string" },
+        "photo_url": { "type": "string" },
+        "status": { "type": "string", "enum": ["Aktif", "Selesai"] },
+        "check_in_time": { "type": "string", "format": "date-time" },
+        "check_out_time": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nik", "name", "address", "phone", "inmate_name", "relationship", "purpose", "status", "check_in_time"]
+    }
+  },
+  "firestore": {
+    "guests": {
+      "schema": { "$ref": "#/entities/Guest" },
+      "description": "Collection of visitor records."
+    }
+  }
+}

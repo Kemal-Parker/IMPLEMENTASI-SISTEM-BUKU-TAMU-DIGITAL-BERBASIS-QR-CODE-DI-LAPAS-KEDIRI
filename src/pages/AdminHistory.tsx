@@ -3,58 +3,73 @@ import { Download, Search, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Guest } from '../db';
+import { db } from '../lib/firebase';
+import { collection, onSnapshot, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
 
 export default function AdminHistory() {
-  const [history, setHistory] = useState<Guest[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [filter, setFilter] = useState('all'); // all, today, week, month
   const [search, setSearch] = useState('');
 
-  const fetchHistory = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/guests/history');
-      const data = await res.json();
-      setHistory(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchHistory();
+    const q = query(
+      collection(db, 'guests'), 
+      where('status', '==', 'Selesai')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Firestore requires compounding indexes for ordering with equality filter 
+      // where + orderby requires an index. So we just sort in memory since it's simple
+      data.sort((a: any, b: any) => new Date(b.check_out_time).getTime() - new Date(a.check_out_time).getTime());
+      
+      setHistory(data);
+      setIsLoading(false);
+    }, (error) => {
+      console.error(error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!window.confirm("Apakah Anda yakin ingin menghapus data riwayat ini secara permanen?")) {
       return;
     }
     
     setIsDeleting(id);
     try {
-      const res = await fetch(`/api/guests/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (res.ok) {
-        setHistory(prev => prev.filter(g => g.id !== id));
-      } else {
-        alert("Gagal menghapus data.");
-      }
+      await deleteDoc(doc(db, 'guests', id));
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan.");
+      alert("Gagal menghapus data.");
     } finally {
       setIsDeleting(null);
     }
   };
 
   const handleExportCSV = () => {
-    window.location.href = '/api/export/csv';
+    // Generate CSV in client
+    const headers = ['NIK', 'Nama', 'Alamat', 'No HP', 'WBP Dituju', 'Hubungan', 'Tujuan', 'Waktu Masuk', 'Waktu Keluar'];
+    const escapeCsv = (str: any) => {
+      if (str === null || str === undefined) return '""';
+      const s = String(str).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+    
+    const rows = filteredHistory.map(g => [
+      g.nik, g.name, g.address, g.phone, g.inmate_name, g.relationship, g.purpose, g.check_in_time, g.check_out_time
+    ].map(escapeCsv).join(','));
+    
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'riwayat_tamu.csv';
+    link.click();
   };
 
   const handleExportPDF = () => {
@@ -68,8 +83,8 @@ export default function AdminHistory() {
       guest.name,
       guest.nik,
       guest.inmate_name,
-      format(new Date(guest.check_in_time + 'Z'), 'dd/MM/yyyy HH:mm'),
-      guest.check_out_time ? format(new Date(guest.check_out_time + 'Z'), 'dd/MM/yyyy HH:mm') : '-',
+      format(new Date(guest.check_in_time), 'dd/MM/yyyy HH:mm'),
+      guest.check_out_time ? format(new Date(guest.check_out_time), 'dd/MM/yyyy HH:mm') : '-',
       guest.status
     ]);
 
@@ -91,7 +106,7 @@ export default function AdminHistory() {
 
     if (filter === 'all') return true;
     
-    const checkInDate = new Date(guest.check_in_time + 'Z');
+    const checkInDate = new Date(guest.check_in_time);
     const today = new Date();
     
     // reset times for day comparisons
@@ -205,11 +220,11 @@ export default function AdminHistory() {
                       <div className="text-sm text-gray-900 line-clamp-1">{guest.purpose}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(guest.check_in_time + 'Z'), 'HH:mm - dd MMM yyyy')}
+                      {format(new Date(guest.check_in_time), 'HH:mm - dd MMM yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {guest.check_out_time 
-                        ? format(new Date(guest.check_out_time + 'Z'), 'HH:mm - dd MMM yyyy')
+                        ? format(new Date(guest.check_out_time), 'HH:mm - dd MMM yyyy')
                         : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
