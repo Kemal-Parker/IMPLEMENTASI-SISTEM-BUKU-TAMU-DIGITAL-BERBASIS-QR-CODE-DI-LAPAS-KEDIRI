@@ -53,7 +53,7 @@ export default function AdminHistory() {
 
   const handleExportCSV = () => {
     // Generate CSV in client
-    const headers = ['NIK', 'Nama', 'Alamat', 'No HP', 'WBP Dituju', 'Hubungan', 'Tujuan', 'Waktu Masuk', 'Waktu Keluar'];
+    const headers = ['NIK', 'Nama', 'Alamat', 'No HP', 'WBP Dituju', 'Asal Instansi', 'Tujuan', 'Waktu Masuk', 'Waktu Keluar', 'Foto (Base64)'];
     const escapeCsv = (str: any) => {
       if (str === null || str === undefined) return '""';
       const s = String(str).replace(/"/g, '""');
@@ -61,7 +61,7 @@ export default function AdminHistory() {
     };
     
     const rows = filteredHistory.map(g => [
-      g.nik, g.name, g.address, g.phone, g.inmate_name, g.relationship, g.purpose, g.check_in_time, g.check_out_time
+      g.nik, g.name, g.address, g.phone, g.inmate_name, g.relationship, g.purpose, g.check_in_time, g.check_out_time, g.photo_url ? "Ada (Base64 Data)" : "Tidak Ada"
     ].map(escapeCsv).join(','));
     
     const csvContent = [headers.join(','), ...rows].join('\n');
@@ -78,20 +78,35 @@ export default function AdminHistory() {
     doc.text('Aplikasi Buku Tamu Digital', 14, 15);
     doc.text('Laporan Riwayat Berita Acara Kunjungan Lapas Kediri', 14, 22);
 
-    const tableColumn = ["Nama", "NIK", "WBP Dituju", "Masuk", "Keluar", "Status"];
+    const tableColumn = ["Foto", "Nama", "NIK", "WBP Dituju", "Masuk", "Keluar", "Asal Instansi"];
     const tableRows = filteredHistory.map(guest => [
+      guest.photo_url ? "" : "-",
       guest.name,
       guest.nik,
       guest.inmate_name,
       format(new Date(guest.check_in_time), 'dd/MM/yyyy HH:mm'),
       guest.check_out_time ? format(new Date(guest.check_out_time), 'dd/MM/yyyy HH:mm') : '-',
-      guest.status
+      guest.relationship
     ]);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 30,
+      bodyStyles: { minCellHeight: 15 },
+      didDrawCell: (data) => {
+        if (data.column.index === 0 && data.cell.section === 'body') {
+          const guest = filteredHistory[data.row.index];
+          if (guest && guest.photo_url) {
+            try {
+              const imgFormat = guest.photo_url.substring(guest.photo_url.indexOf(':') + 1, guest.photo_url.indexOf(';')).split('/')[1].toUpperCase();
+              doc.addImage(guest.photo_url, imgFormat, data.cell.x + 2, data.cell.y + 2, 11, 11);
+            } catch(e) {
+              console.error(e);
+            }
+          }
+        }
+      }
     });
 
     doc.save(`Laporan_Kunjungan_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
@@ -187,7 +202,7 @@ export default function AdminHistory() {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tamu</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warga Binaan</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warga Binaan & Asal Instansi</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tujuan</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Masuk</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Keluar</th>
@@ -209,8 +224,19 @@ export default function AdminHistory() {
                 filteredHistory.map((guest) => (
                   <tr key={guest.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{guest.name}</div>
-                      <div className="text-sm text-gray-500">NIK: {guest.nik}</div>
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                          {guest.photo_url ? (
+                            <img className="h-10 w-10 object-cover" src={guest.photo_url} alt="" />
+                          ) : (
+                            <div className="h-5 w-5 bg-gray-300 rounded-full"></div>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{guest.name}</div>
+                          <div className="text-sm text-gray-500">NIK: {guest.nik}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{guest.inmate_name}</div>

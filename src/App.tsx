@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Home, Users, QrCode, FileText, Menu, X, LogIn, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import AdminDashboard from './pages/AdminDashboard';
 import VisitorForm from './pages/VisitorForm';
 import AdminHistory from './pages/AdminHistory';

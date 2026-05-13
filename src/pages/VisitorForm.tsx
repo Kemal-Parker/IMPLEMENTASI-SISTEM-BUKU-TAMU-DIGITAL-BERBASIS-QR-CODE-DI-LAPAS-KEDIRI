@@ -8,6 +8,7 @@ export default function VisitorForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [agencyType, setAgencyType] = useState("");
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,13 +56,18 @@ export default function VisitorForm() {
     setIsSubmitting(true);
     
     const formData = new FormData(e.currentTarget);
+    let relationshipValue = formData.get('relationship') as string;
+    if (agencyType === 'Lainnya') {
+      relationshipValue = formData.get('custom_agency') as string;
+    }
+    
     const data = {
       nik: formData.get('nik') as string,
       name: formData.get('name') as string,
       address: formData.get('address') as string,
       phone: formData.get('phone') as string,
       inmate_name: formData.get('inmate_name') as string,
-      relationship: formData.get('relationship') as string,
+      relationship: relationshipValue,
       purpose: formData.get('purpose') as string,
       photo_url: photoBase64,
       status: 'Aktif',
@@ -117,7 +123,7 @@ export default function VisitorForm() {
             <div className="sm:col-span-2">
               <label htmlFor="nik" className="block text-sm font-medium text-gray-700">Nomor Induk Kependudukan (NIK)</label>
               <div className="mt-1">
-                <input required type="text" name="nik" id="nik" maxLength={16} placeholder="16 Digit NIK KTP Anda" className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2" />
+                <input required type="text" pattern="[0-9]*" onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')} name="nik" id="nik" maxLength={16} placeholder="16 Digit NIK KTP Anda" className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2" />
               </div>
             </div>
 
@@ -138,7 +144,7 @@ export default function VisitorForm() {
             <div className="sm:col-span-2">
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Nomor HP / WhatsApp Aktif</label>
               <div className="mt-1">
-                <input required type="tel" name="phone" id="phone" placeholder="08xxxxxxxxxx" className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2" />
+                <input required type="text" pattern="[0-9]*" onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '')} name="phone" id="phone" placeholder="08xxxxxxxxxx" className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2" />
               </div>
             </div>
 
@@ -179,25 +185,27 @@ export default function VisitorForm() {
             </div>
 
             <div className="sm:col-span-1">
-              <label htmlFor="relationship" className="block text-sm font-medium text-gray-700">Status Hubungan</label>
+              <label htmlFor="relationship" className="block text-sm font-medium text-gray-700">Asal Instansi</label>
               <div className="mt-1">
-                <select required id="relationship" name="relationship" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                  <option value="">Pilih hubungan...</option>
-                  <option value="Orang Tua">Orang Tua</option>
-                  <option value="Suami/Istri">Suami/Istri</option>
-                  <option value="Anak">Anak</option>
-                  <option value="Saudara Kandung">Saudara Kandung</option>
-                  <option value="Teman/Kerabat">Teman/Kerabat</option>
+                <select required id="relationship" name="relationship" value={agencyType} onChange={(e) => setAgencyType(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                  <option value="">Pilih asal instansi...</option>
                   <option value="Kuasa Hukum">Kuasa Hukum</option>
-                  <option value="Lainnya">Lainnya</option>
+                  <option value="Polres">Polres</option>
+                  <option value="Kejaksaan">Kejaksaan</option>
+                  <option value="Pengadilan">Pengadilan</option>
+                  <option value="Dinas Terkait">Dinas Terkait</option>
+                  <option value="Lainnya">Lainnya...</option>
                 </select>
+                {agencyType === 'Lainnya' && (
+                  <input required type="text" name="custom_agency" placeholder="Sebutkan asal instansi..." className="mt-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2" />
+                )}
               </div>
             </div>
 
             <div className="sm:col-span-2">
               <label htmlFor="purpose" className="block text-sm font-medium text-gray-700">Tujuan Kunjungan</label>
               <div className="mt-1">
-                <textarea required id="purpose" name="purpose" rows={3} placeholder="Contoh: Menjenguk dan membawakan makanan" className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2" />
+                <textarea required id="purpose" name="purpose" rows={3} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2" />
               </div>
             </div>
           </div>
